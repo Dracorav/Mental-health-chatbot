@@ -13,6 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+import { T } from './T';
+import { useLanguage } from '@/hooks/use-language';
 
 const formSchema = z.object({
   stressLevel: z.enum(['low', 'medium', 'high'], {
@@ -23,6 +25,7 @@ const formSchema = z.object({
 export function RelaxationGuide() {
   const [guidance, setGuidance] = useState<RelaxationGuidanceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { language } = useLanguage();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -35,7 +38,13 @@ export function RelaxationGuide() {
       const result = await getRelaxationGuidance({
         stressLevel: data.stressLevel,
       });
-      setGuidance(result);
+
+      if (language !== 'en') {
+        setGuidance(result)
+      } else {
+        setGuidance(result);
+      }
+
     } catch (error) {
       console.error('Failed to get relaxation guidance:', error);
     } finally {
@@ -47,8 +56,8 @@ export function RelaxationGuide() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-            <CardTitle>Assess Your Stress</CardTitle>
-            <CardDescription>How are you feeling right now?</CardDescription>
+            <CardTitle><T>Assess Your Stress</T></CardTitle>
+            <CardDescription><T>How are you feeling right now?</T></CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -68,19 +77,19 @@ export function RelaxationGuide() {
                           <FormControl>
                             <RadioGroupItem value="low" />
                           </FormControl>
-                          <FormLabel className="font-normal text-base">Low</FormLabel>
+                          <FormLabel className="font-normal text-base"><T>Low</T></FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="medium" />
                           </FormControl>
-                          <FormLabel className="font-normal text-base">Medium</FormLabel>
+                          <FormLabel className="font-normal text-base"><T>Medium</T></FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="high" />
                           </FormControl>
-                          <FormLabel className="font-normal text-base">High</FormLabel>
+                          <FormLabel className="font-normal text-base"><T>High</T></FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
@@ -89,7 +98,7 @@ export function RelaxationGuide() {
               />
               <Button type="submit" disabled={isLoading} size="lg">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Get Guidance
+                <T>Get Guidance</T>
               </Button>
             </form>
           </Form>
@@ -113,12 +122,14 @@ export function RelaxationGuide() {
       {guidance && (
         <Card className="bg-primary/10 border-primary/20">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl text-primary-foreground">{guidance.technique}</CardTitle>
+            <CardTitle className="font-headline text-2xl text-primary-foreground">
+                <T>{guidance.technique}</T>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-lg max-w-none text-foreground">
                 {guidance.instructions.split('\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
+                    <p key={index}><T>{paragraph}</T></p>
                 ))}
             </div>
           </CardContent>

@@ -26,7 +26,7 @@ export function TalkingAvatar({ isLoading, isSpeaking }: TalkingAvatarProps) {
         <defs>
           <SvgGlowFilter />
         </defs>
-      </svg>
+      </svg> 
       {isLoading && (
         <div className="absolute inset-0 z-10 flex animate-spin items-center justify-center rounded-full">
             <div className="h-full w-full rounded-full border-4 border-dashed border-accent"></div>

@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { T } from './T';
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -48,9 +49,9 @@ export function FeedbackForm() {
         <Card className="text-center">
             <CardContent className="p-10">
                 <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-                <h2 className="mt-4 text-2xl font-semibold font-headline">Thank You!</h2>
-                <p className="mt-2 text-muted-foreground">Your feedback has been successfully submitted. We appreciate you taking the time to help us.</p>
-                <Button onClick={() => setSubmitted(false)} className="mt-6">Submit Another</Button>
+                <h2 className="mt-4 text-2xl font-semibold font-headline"><T>Thank You!</T></h2>
+                <p className="mt-2 text-muted-foreground"><T>Your feedback has been successfully submitted. We appreciate you taking the time to help us.</T></p>
+                <Button onClick={() => setSubmitted(false)} className="mt-6"><T>Submit Another</T></Button>
             </CardContent>
         </Card>
     )
@@ -59,8 +60,8 @@ export function FeedbackForm() {
   return (
     <Card>
         <CardHeader>
-            <CardTitle>Feedback Form</CardTitle>
-            <CardDescription>Let us know what you think.</CardDescription>
+            <CardTitle><T>Feedback Form</T></CardTitle>
+            <CardDescription><T>Let us know what you think.</T></CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -71,7 +72,7 @@ export function FeedbackForm() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name (Optional)</FormLabel>
+                      <FormLabel><T>Name (Optional)</T></FormLabel>
                       <FormControl>
                         <Input placeholder="Your Name" {...field} />
                       </FormControl>
@@ -84,7 +85,7 @@ export function FeedbackForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email (Optional)</FormLabel>
+                      <FormLabel><T>Email (Optional)</T></FormLabel>
                       <FormControl>
                         <Input placeholder="your@email.com" {...field} />
                       </FormControl>
@@ -98,7 +99,7 @@ export function FeedbackForm() {
                 name="feedback"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Feedback</FormLabel>
+                    <FormLabel><T>Feedback</T></FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Tell us about your experience..."
@@ -110,7 +111,7 @@ export function FeedbackForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" size="lg">Submit Feedback</Button>
+              <Button type="submit" size="lg"><T>Submit Feedback</T></Button>
             </form>
           </Form>
       </CardContent>

@@ -1,4 +1,5 @@
 import { RelaxationGuide } from '@/components/relaxation-guide';
+import { T } from '@/components/T';
 
 export default function RelaxationPage() {
   return (
@@ -6,10 +7,10 @@ export default function RelaxationPage() {
        <div className="container mx-auto max-w-3xl py-8 px-4">
         <div className="space-y-4 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl font-headline">
-            Find Your Calm
+            <T>Find Your Calm</T>
           </h1>
           <p className="text-lg text-muted-foreground">
-            Explore guided exercises to help you manage stress and find balance. Select your current stress level for a personalized recommendation.
+            <T>Explore guided exercises to help you manage stress and find balance. Select your current stress level for a personalized recommendation.</T>
           </p>
         </div>
         <div className="mt-12">

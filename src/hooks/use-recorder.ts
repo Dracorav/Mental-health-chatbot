@@ -26,7 +26,7 @@ export function useRecorder() {
 
       mediaRecorder.start();
     } catch (err) {
-      console.error('Error accessing microphone:', err);
+      console.error('Error accessing microphone:', JSON.stringify(err, null, 2));
       toast({
         title: 'Microphone Error',
         description: 'Could not access the microphone. Please check your browser permissions.',
