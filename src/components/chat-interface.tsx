@@ -27,7 +27,7 @@ const WelcomeMessage: Message = {
   text: "Hello! I'm MindfulMe, your personal wellness companion. How are you feeling today?",
 };
 
-const AVATAR_URL = "https://placehold.co/256x256/E3D8F1/4B2A69.png";
+const AVATAR_URL = "https://placehold.co/256x256/fef08a/4f46e5.png";
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);

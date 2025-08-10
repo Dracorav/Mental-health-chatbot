@@ -49,7 +49,7 @@ export function TalkingAvatar({ videoUrl, imageUrl, isLoading }: TalkingAvatarPr
         ) : (
           <Image
             src={imageUrl}
-            data-ai-hint="female avatar"
+            data-ai-hint="yellow minion"
             alt="MindfulMe Avatar"
             width={256}
             height={256}
