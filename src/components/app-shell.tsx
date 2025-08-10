@@ -50,6 +50,10 @@ function LanguageSelector() {
             <SelectItem value="fr">Français</SelectItem>
             <SelectItem value="de">Deutsch</SelectItem>
             <SelectItem value="ja">日本語</SelectItem>
+            <SelectItem value="hi">हिन्दी</SelectItem>
+            <SelectItem value="bn">বাংলা</SelectItem>
+            <SelectItem value="ta">தமிழ்</SelectItem>
+            <SelectItem value="te">తెలుగు</SelectItem>
           </SelectContent>
         </Select>
       </div>
