@@ -54,6 +54,7 @@ function LanguageSelector() {
             <SelectItem value="bn">বাংলা</SelectItem>
             <SelectItem value="ta">தமிழ்</SelectItem>
             <SelectItem value="te">తెలుగు</SelectItem>
+            <SelectItem value="kn">ಕನ್ನಡ</SelectItem>
           </SelectContent>
         </Select>
       </div>
