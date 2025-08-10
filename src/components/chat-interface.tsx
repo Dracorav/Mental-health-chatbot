@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
 import { Send, Mic, Square } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { speechToText } from '@/ai/flows/speech-to-text';
+import { generateTalkingAvatar } from '@/ai/flows/generate-talking-avatar';
 
 import { TalkingAvatar } from '@/components/talking-avatar';
 import { Button } from '@/components/ui/button';
@@ -27,12 +27,13 @@ const WelcomeMessage: Message = {
   text: "Hello! I'm MindfulMe, your personal wellness companion. How are you feeling today?",
 };
 
+const AVATAR_URL = "https://placehold.co/256x256/E3D8F1/4B2A69.png";
+
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
@@ -43,7 +44,7 @@ export function ChatInterface() {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
-
+  
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -58,12 +59,21 @@ export function ChatInterface() {
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
 
-      const { media } = await textToSpeech(adaptedResponse);
-      const audio = new Audio(media);
-      setAudio(audio);
-      audio.play();
-      audio.onplay = () => setIsSpeaking(true);
-      audio.onended = () => setIsSpeaking(false);
+      const { videoDataUri } = await generateTalkingAvatar({ 
+        textToSpeak: adaptedResponse,
+        avatarImageUrl: AVATAR_URL,
+      });
+
+      if (videoDataUri) {
+        setVideoUrl(videoDataUri);
+      } else {
+         toast({
+          title: 'An error occurred',
+          description: 'Failed to generate avatar video. Please try again.',
+          variant: 'destructive',
+        });
+      }
+
     } catch (error) {
       console.error(error);
       toast({
@@ -104,7 +114,7 @@ export function ChatInterface() {
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-2xl px-4 py-8">
           <div className="mb-8 flex flex-col items-center justify-center gap-4">
-            <TalkingAvatar isLoading={isLoading} isSpeaking={isSpeaking} />
+            <TalkingAvatar videoUrl={videoUrl} imageUrl={AVATAR_URL} isLoading={isLoading} />
             <h2 className="text-2xl font-semibold font-headline text-center">MindfulMe</h2>
           </div>
 
