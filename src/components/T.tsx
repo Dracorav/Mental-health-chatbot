@@ -14,14 +14,13 @@ function TComponent({ children }: TProps) {
 
   useEffect(() => {
     if (language === 'en' || !children) {
-      setTranslatedText(children);
+      if (translatedText !== children) {
+        setTranslatedText(children);
+      }
       return;
     }
 
     let isCancelled = false;
-    
-    // Set a placeholder while translating
-    setTranslatedText('...');
 
     translateText({ text: children, targetLanguage: language })
       .then(result => {
@@ -39,8 +38,16 @@ function TComponent({ children }: TProps) {
     return () => {
       isCancelled = true;
     };
-  }, [children, language]);
+  }, [children, language, translatedText]);
 
+  if (language !== 'en' && translatedText === children) {
+    // While translating, render nothing on the client to avoid mismatch.
+    // The initial server-render will show the original text.
+    // The client will then show nothing, and then the translated text.
+    // This is better than showing "..." which causes a mismatch.
+    return null;
+  }
+  
   return <>{translatedText}</>;
 }
 
