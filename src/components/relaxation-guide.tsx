@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { getRelaxationGuidance, type RelaxationGuidanceOutput } from '@/ai/flows/relaxation-technique-guidance';
+import { translateText } from '@/ai/flows/translate-text';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,7 +41,14 @@ export function RelaxationGuide() {
       });
 
       if (language !== 'en') {
-        setGuidance(result)
+        const [translatedTechnique, translatedInstructions] = await Promise.all([
+          translateText({ text: result.technique, targetLanguage: language }),
+          translateText({ text: result.instructions, targetLanguage: language })
+        ]);
+        setGuidance({
+            technique: translatedTechnique.translatedText,
+            instructions: translatedInstructions.translatedText,
+        });
       } else {
         setGuidance(result);
       }
@@ -123,13 +131,13 @@ export function RelaxationGuide() {
         <Card className="bg-primary/10 border-primary/20">
           <CardHeader>
             <CardTitle className="font-headline text-2xl text-primary-foreground">
-                <T>{guidance.technique}</T>
+                {language === 'en' ? guidance.technique : <T>{guidance.technique}</T>}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-lg max-w-none text-foreground">
                 {guidance.instructions.split('\n').map((paragraph, index) => (
-                    <p key={index}><T>{paragraph}</T></p>
+                    <p key={index}>{language === 'en' ? paragraph : <T>{paragraph}</T>}</p>
                 ))}
             </div>
           </CardContent>
