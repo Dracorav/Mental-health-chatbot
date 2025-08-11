@@ -57,19 +57,25 @@ export function ChatInterface() {
 
     try {
       const responsePromise = adaptiveResponse({ message: input });
-      const ttsPromise = responsePromise.then(response => textToSpeech(response.adaptedResponse));
+      
+      const ttsPromise = responsePromise.then(response => {
+        if (response.adaptedResponse) {
+          return textToSpeech(response.adaptedResponse);
+        }
+        return null;
+      });
 
-      const [{ adaptedResponse }] = await Promise.all([
+      const [response, ttsResponse] = await Promise.all([
         responsePromise,
+        ttsPromise
       ]);
       
-      const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: adaptedResponse };
+      const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: response.adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
       
-      const ttsResponse = await ttsPromise;
-      if (audioRef.current) {
-        audioRef.current.src = ttsResponse.media;
-        audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+      if (ttsResponse && ttsResponse.media) {
+        const audio = new Audio(ttsResponse.media);
+        audio.play().catch(e => console.error("Error playing audio:", e));
       }
 
     } catch (error) {
