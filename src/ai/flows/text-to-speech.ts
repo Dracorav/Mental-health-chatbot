@@ -31,6 +31,10 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async (query) => {
+    if (!query) {
+      throw new Error('No text provided for text-to-speech conversion.');
+    }
+    
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {
@@ -43,13 +47,16 @@ const textToSpeechFlow = ai.defineFlow(
       },
       prompt: query,
     });
+
     if (!media) {
-      throw new Error('no media returned');
+      throw new Error('No media returned from the text-to-speech service.');
     }
+
     const audioBuffer = Buffer.from(
       media.url.substring(media.url.indexOf(',') + 1),
       'base64'
     );
+    
     return {
       media: 'data:audio/wav;base64,' + (await toWav(audioBuffer)),
     };
@@ -69,7 +76,7 @@ async function toWav(
       bitDepth: sampleWidth * 8,
     });
 
-    const bufs = [] as any[];
+    const bufs: Buffer[] = [];
     writer.on('error', reject);
     writer.on('data', function (d) {
       bufs.push(d);
