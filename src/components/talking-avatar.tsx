@@ -41,7 +41,7 @@ export function TalkingAvatar({ videoUrl, imageUrl, isLoading }: TalkingAvatarPr
             src={videoUrl}
             autoPlay
             loop
-            muted
+            controls
             playsInline
             className="h-full w-full object-cover"
             key={videoUrl}
@@ -49,7 +49,7 @@ export function TalkingAvatar({ videoUrl, imageUrl, isLoading }: TalkingAvatarPr
         ) : (
           <Image
             src={imageUrl}
-            data-ai-hint="yellow minion"
+            data-ai-hint="yellow minion smiling face"
             alt="MindfulMe Avatar"
             width={256}
             height={256}
