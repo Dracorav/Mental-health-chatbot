@@ -34,7 +34,6 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
@@ -56,28 +55,17 @@ export function ChatInterface() {
     setIsLoading(true);
 
     try {
-      const responsePromise = adaptiveResponse({ message: input });
-      
-      const ttsPromise = responsePromise.then(response => {
-        if (response.adaptedResponse) {
-          return textToSpeech(response.adaptedResponse);
-        }
-        return null;
-      });
-
-      const [response, ttsResponse] = await Promise.all([
-        responsePromise,
-        ttsPromise
-      ]);
-      
+      const response = await adaptiveResponse({ message: input });
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: response.adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
       
-      if (ttsResponse && ttsResponse.media) {
-        const audio = new Audio(ttsResponse.media);
-        audio.play().catch(e => console.error("Error playing audio:", e));
+      if (response.adaptedResponse) {
+        const ttsResponse = await textToSpeech(response.adaptedResponse);
+        if (ttsResponse && ttsResponse.media) {
+          const audio = new Audio(ttsResponse.media);
+          audio.play().catch(e => console.error("Error playing audio:", e));
+        }
       }
-
     } catch (error) {
       console.error(error);
       toast({
@@ -115,7 +103,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col bg-background">
-       <audio ref={audioRef} className="hidden" />
+       <audio className="hidden" />
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-2xl px-4 py-8">
           <div className="mb-8 flex flex-col items-center justify-center gap-4">
