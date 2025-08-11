@@ -59,13 +59,14 @@ export function ChatInterface() {
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: response.adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
       
-      if (response.adaptedResponse) {
-        const ttsResponse = await textToSpeech(response.adaptedResponse);
-        if (ttsResponse && ttsResponse.media) {
-          const audio = new Audio(ttsResponse.media);
-          audio.play().catch(e => console.error("Error playing audio:", e));
-        }
-      }
+      // The following audio playback functionality has been disabled to prevent rate-limiting errors.
+      // if (response.adaptedResponse) {
+      //   const ttsResponse = await textToSpeech(response.adaptedResponse);
+      //   if (ttsResponse && ttsResponse.media) {
+      //     const audio = new Audio(ttsResponse.media);
+      //     audio.play().catch(e => console.error("Error playing audio:", e));
+      //   }
+      // }
     } catch (error) {
       console.error(error);
       toast({
