@@ -11,12 +11,15 @@ interface TProps {
 function TComponent({ children }: TProps) {
   const { language } = useLanguage();
   const [translatedText, setTranslatedText] = useState(children);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (language === 'en' || !children) {
-      if (translatedText !== children) {
-        setTranslatedText(children);
-      }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || language === 'en' || !children) {
+      setTranslatedText(children);
       return;
     }
 
@@ -38,16 +41,14 @@ function TComponent({ children }: TProps) {
     return () => {
       isCancelled = true;
     };
-  }, [children, language, translatedText]);
+  }, [children, language, isMounted]);
 
-  if (language !== 'en' && translatedText === children) {
-    // While translating, render nothing on the client to avoid mismatch.
-    // The initial server-render will show the original text.
-    // The client will then show nothing, and then the translated text.
-    // This is better than showing "..." which causes a mismatch.
-    return null;
+  if (!isMounted) {
+    // On the server and initial client render, return the original text.
+    return <>{children}</>;
   }
   
+  // On subsequent client renders, return the translated text.
   return <>{translatedText}</>;
 }
 
