@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import { Send, Mic, Square, Bot } from 'lucide-react';
+import { Send, Mic, Square, Bot, Play, Loader2 } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
 import { speechToText } from '@/ai/flows/speech-to-text';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -21,12 +21,15 @@ type Message = {
   id: number;
   role: 'user' | 'assistant';
   text: string;
+  audioUri?: string;
+  isGeneratingAudio?: boolean;
 };
 
 const WelcomeMessage: Message = {
   id: 0,
   role: 'assistant',
   text: "Hello! I'm MindfulMe, your personal wellness companion. How are you feeling today?",
+  isGeneratingAudio: false,
 };
 
 const AVATAR_URL = "https://i.postimg.cc/43WKm1Py/avatar.jpg";
@@ -40,12 +43,30 @@ export function ChatInterface() {
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+  
+  const generateAndSetAudio = async (messageId: number, text: string) => {
+    try {
+      const ttsResponse = await textToSpeech(text);
+      if (ttsResponse && ttsResponse.media) {
+        setMessages(prev => prev.map(m => m.id === messageId ? {...m, audioUri: ttsResponse.media, isGeneratingAudio: false} : m));
+      }
+    } catch (e) {
+      console.error("Error with TTS service. It may be rate-limited.", e);
+      toast({
+        title: 'Audio Error',
+        description: 'Could not generate audio. The service might be unavailable.',
+        variant: 'destructive',
+      });
+      setMessages(prev => prev.map(m => m.id === messageId ? {...m, isGeneratingAudio: false} : m));
+    }
+  };
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,24 +79,17 @@ export function ChatInterface() {
 
     try {
       const response = await adaptiveResponse({ message: input, language });
-      const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: response.adaptedResponse };
+      const assistantMessageId = Date.now() + 1;
+      const assistantMessage: Message = {
+        id: assistantMessageId,
+        role: 'assistant',
+        text: response.adaptedResponse,
+        isGeneratingAudio: true,
+      };
       setMessages(prev => [...prev, assistantMessage]);
-      
+
       if (response.adaptedResponse) {
-        try {
-            const ttsResponse = await textToSpeech(response.adaptedResponse);
-            if (ttsResponse && ttsResponse.media) {
-              const audio = new Audio(ttsResponse.media);
-              audio.play().catch(e => console.error("Error playing audio:", e));
-            }
-        } catch(e) {
-             console.error("Error with TTS service. It may be rate-limited.", e);
-             toast({
-                title: 'Audio Error',
-                description: 'Could not play audio response. The Text-to-Speech service might be temporarily unavailable.',
-                variant: 'destructive',
-            });
-        }
+        generateAndSetAudio(assistantMessageId, response.adaptedResponse);
       }
     } catch (error) {
       console.error(error);
@@ -111,6 +125,15 @@ export function ChatInterface() {
       startRecording();
     }
   };
+  
+  const handlePlayAudio = (audioUri: string) => {
+    if (audioRef.current) {
+        audioRef.current.pause();
+    }
+    const audio = new Audio(audioUri);
+    audioRef.current = audio;
+    audio.play().catch(e => console.error("Error playing audio:", e));
+  }
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col bg-background">
@@ -151,6 +174,23 @@ export function ChatInterface() {
                 >
                   <p>{message.text}</p>
                 </div>
+                {message.role === 'assistant' && (message.audioUri || message.isGeneratingAudio) && (
+                   <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="rounded-full text-primary hover:bg-primary/10"
+                      onClick={() => message.audioUri && handlePlayAudio(message.audioUri)}
+                      disabled={message.isGeneratingAudio || !message.audioUri}
+                      aria-label="Play audio"
+                    >
+                      {message.isGeneratingAudio ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Play className="h-5 w-5" />
+                      )}
+                   </Button>
+                )}
               </div>
             ))}
             {isLoading && !messages.some(m => m.id > Date.now()) && (
