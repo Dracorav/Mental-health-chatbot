@@ -3,8 +3,13 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, MessageSquare, Smile, Heart, Languages } from 'lucide-react';
+import { Bot, MessageSquare, Smile, Heart, Languages, LogIn, LogOut, UserPlus, UserCircle, Loader2 } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '@/hooks/use-language';
+import { UserProvider, useUser } from '@/hooks/use-user';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+
 import {
   Select,
   SelectContent,
@@ -24,8 +29,12 @@ import {
   SidebarInset,
   SidebarTrigger,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
 import { T } from './T';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   { href: '/', label: 'Chat', icon: MessageSquare },
@@ -41,7 +50,7 @@ function LanguageSelector() {
       <Languages className="h-5 w-5" />
       <div className="group-data-[collapsible=icon]:hidden">
         <Select value={language} onValueChange={setLanguage}>
-          <SelectTrigger className="w-[180px] border-0 bg-transparent focus:ring-0">
+          <SelectTrigger className="w-full border-0 bg-transparent focus:ring-0">
             <SelectValue placeholder="Language" />
           </SelectTrigger>
           <SelectContent>
@@ -60,6 +69,82 @@ function LanguageSelector() {
       </div>
     </div>
   );
+}
+
+function AuthSection() {
+    const { user, loading } = useUser();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            toast({
+                title: 'Logged Out',
+                description: "You have been successfully logged out."
+            })
+            router.push('/');
+        } catch (error) {
+            console.error("Logout error", error);
+            toast({
+                title: 'Logout Failed',
+                description: 'There was an error logging you out. Please try again.',
+                variant: 'destructive',
+            })
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="p-2">
+            {user ? (
+                <div className="flex flex-col gap-2 items-center group-data-[collapsible=icon]:items-start">
+                    <div className="flex items-center gap-3 w-full">
+                        <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.photoURL || undefined} />
+                            <AvatarFallback>
+                                <UserCircle className="h-6 w-6" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="group-data-[collapsible=icon]:hidden overflow-hidden">
+                            <p className="font-semibold truncate">{user.displayName || 'User'}</p>
+                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                    </div>
+                    <Button onClick={handleLogout} variant="ghost" className="w-full justify-start">
+                        <LogOut className="h-5 w-5 mr-2" />
+                        <span className="group-data-[collapsible=icon]:hidden"><T>Logout</T></span>
+                    </Button>
+                </div>
+            ) : (
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild className="justify-start">
+                            <Link href="/login">
+                                <LogIn className="h-5 w-5" />
+                                <span className="group-data-[collapsible=icon]:hidden"><T>Login</T></span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild className="justify-start">
+                            <Link href="/signup">
+                                <UserPlus className="h-5 w-5" />
+                                <span className="group-data-[collapsible=icon]:hidden"><T>Sign Up</T></span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            )}
+        </div>
+    )
 }
 
 function AppShellContent({ children }: { children: ReactNode }) {
@@ -103,6 +188,8 @@ function AppShellContent({ children }: { children: ReactNode }) {
           <div className="p-2">
              <LanguageSelector />
           </div>
+          <SidebarSeparator />
+          <AuthSection />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -121,8 +208,10 @@ function AppShellContent({ children }: { children: ReactNode }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
     return (
+      <UserProvider>
         <LanguageProvider>
             <AppShellContent>{children}</AppShellContent>
         </LanguageProvider>
+      </UserProvider>
     )
 }
