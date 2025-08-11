@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, FormEvent } from 'react';
 import { Send, Mic, Square, Bot } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
 import { speechToText } from '@/ai/flows/speech-to-text';
-// import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,14 +61,22 @@ export function ChatInterface() {
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: response.adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
       
-      // The following audio playback functionality has been disabled to prevent rate-limiting errors.
-      // if (response.adaptedResponse) {
-      //   const ttsResponse = await textToSpeech(response.adaptedResponse);
-      //   if (ttsResponse && ttsResponse.media) {
-      //     const audio = new Audio(ttsResponse.media);
-      //     audio.play().catch(e => console.error("Error playing audio:", e));
-      //   }
-      // }
+      if (response.adaptedResponse) {
+        try {
+            const ttsResponse = await textToSpeech(response.adaptedResponse);
+            if (ttsResponse && ttsResponse.media) {
+              const audio = new Audio(ttsResponse.media);
+              audio.play().catch(e => console.error("Error playing audio:", e));
+            }
+        } catch(e) {
+             console.error("Error with TTS service. It may be rate-limited.", e);
+             toast({
+                title: 'Audio Error',
+                description: 'Could not play audio response. The Text-to-Speech service might be temporarily unavailable.',
+                variant: 'destructive',
+            });
+        }
+      }
     } catch (error) {
       console.error(error);
       toast({
@@ -106,7 +114,6 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col bg-background">
-       <audio className="hidden" />
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-2xl px-4 py-8">
           <div className="mb-8 flex flex-col items-center justify-center gap-4">
