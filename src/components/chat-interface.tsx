@@ -64,11 +64,17 @@ export function ChatInterface() {
     setAudioUrl(null);
 
     try {
-      const { adaptedResponse } = await adaptiveResponse({ message: input });
+      const responsePromise = adaptiveResponse({ message: input });
+      const ttsPromise = responsePromise.then(response => textToSpeech(response.adaptedResponse));
+
+      const [{ adaptedResponse }] = await Promise.all([
+        responsePromise,
+      ]);
+      
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
-
-      const ttsResponse = await textToSpeech(adaptedResponse);
+      
+      const ttsResponse = await ttsPromise;
       setAudioUrl(ttsResponse.media);
 
     } catch (error) {
