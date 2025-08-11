@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, FormEvent } from 'react';
 import { Send, Mic, Square, Bot } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
 import { speechToText } from '@/ai/flows/speech-to-text';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
+// import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { T } from './T';
+import { useLanguage } from '@/hooks/use-language';
 
 type Message = {
   id: number;
@@ -34,6 +35,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { language } = useLanguage();
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
@@ -55,7 +57,7 @@ export function ChatInterface() {
     setIsLoading(true);
 
     try {
-      const response = await adaptiveResponse({ message: input });
+      const response = await adaptiveResponse({ message: input, language });
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: response.adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
       
