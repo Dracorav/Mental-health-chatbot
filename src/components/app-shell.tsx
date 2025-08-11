@@ -129,7 +129,7 @@ function AuthSection() {
                         <SidebarMenuButton asChild className="justify-start">
                             <Link href="/login">
                                 <LogIn className="h-5 w-5" />
-                                <span className="group-data-[collapsible=icon]:hidden"><T>Login</T></span>
+                                <span className="group-data-[collapsible=icon]:hidden"><T>Login / Sign Up</T></span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
