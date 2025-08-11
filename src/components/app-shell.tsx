@@ -46,15 +46,15 @@ function LanguageSelector() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="en">English</SelectItem>
-            <SelectItem value="es">Español</SelectItem>
-            <SelectItem value="fr">Français</SelectItem>
-            <SelectItem value="de">Deutsch</SelectItem>
-            <SelectItem value="ja">日本語</SelectItem>
             <SelectItem value="hi">हिन्दी</SelectItem>
             <SelectItem value="bn">বাংলা</SelectItem>
             <SelectItem value="ta">தமிழ்</SelectItem>
             <SelectItem value="te">తెలుగు</SelectItem>
             <SelectItem value="kn">ಕನ್ನಡ</SelectItem>
+            <SelectItem value="es">Español</SelectItem>
+            <SelectItem value="fr">Français</SelectItem>
+            <SelectItem value="de">Deutsch</SelectItem>
+            <SelectItem value="ja">日本語</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -34,12 +34,11 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -47,12 +46,6 @@ export function ChatInterface() {
     }
   }, [messages]);
 
-  useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.play();
-    }
-  }, [audioUrl]);
-  
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -61,7 +54,6 @@ export function ChatInterface() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    setAudioUrl(null);
 
     try {
       const responsePromise = adaptiveResponse({ message: input });
@@ -75,7 +67,10 @@ export function ChatInterface() {
       setMessages(prev => [...prev, assistantMessage]);
       
       const ttsResponse = await ttsPromise;
-      setAudioUrl(ttsResponse.media);
+      if (audioRef.current) {
+        audioRef.current.src = ttsResponse.media;
+        audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+      }
 
     } catch (error) {
       console.error(error);
@@ -114,6 +109,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col bg-background">
+       <audio ref={audioRef} className="hidden" />
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-2xl px-4 py-8">
           <div className="mb-8 flex flex-col items-center justify-center gap-4">
@@ -168,9 +164,6 @@ export function ChatInterface() {
 
       <div className="sticky bottom-0 bg-background/80 py-4 backdrop-blur-sm">
         <div className="container mx-auto max-w-2xl px-4">
-          {audioUrl && (
-            <audio ref={audioRef} src={audioUrl} />
-          )}
           <form
             onSubmit={handleSendMessage}
             className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm"
