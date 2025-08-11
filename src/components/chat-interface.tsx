@@ -169,9 +169,7 @@ export function ChatInterface() {
       <div className="sticky bottom-0 bg-background/80 py-4 backdrop-blur-sm">
         <div className="container mx-auto max-w-2xl px-4">
           {audioUrl && (
-            <div className="mb-2">
-                <audio ref={audioRef} src={audioUrl} controls className="w-full h-10" />
-            </div>
+            <audio ref={audioRef} src={audioUrl} />
           )}
           <form
             onSubmit={handleSendMessage}
