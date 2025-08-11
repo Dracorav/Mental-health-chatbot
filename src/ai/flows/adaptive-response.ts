@@ -74,7 +74,7 @@ const adaptiveResponseFlow = ai.defineFlow(
 
     // 2. Translate to English if necessary
     let messageInEnglish = input.message;
-    if (detectedLanguage !== 'en') {
+    if (detectedLanguage.toLowerCase() !== 'en') {
       const translationResult = await translateText({ text: input.message, targetLanguage: 'en' });
       messageInEnglish = translationResult.translatedText;
     }
@@ -84,7 +84,7 @@ const adaptiveResponseFlow = ai.defineFlow(
     const responseInEnglish = responseOutput!.adaptedResponse;
     
     // 4. Translate the response to the target language if necessary
-    if (input.language === 'en') {
+    if (input.language.toLowerCase() === 'en') {
       return { adaptedResponse: responseInEnglish };
     }
     
