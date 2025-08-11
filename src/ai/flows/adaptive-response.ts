@@ -17,10 +17,7 @@ const AdaptiveResponseInputSchema = z.object({
 export type AdaptiveResponseInput = z.infer<typeof AdaptiveResponseInputSchema>;
 
 const AdaptiveResponseOutputSchema = z.object({
-  sentiment: z
-    .string()
-    .describe('The sentiment of the message (positive, negative, or neutral).'),
-  adaptedResponse: z.string().describe('The chatbot response adapted to the sentiment.'),
+  adaptedResponse: z.string().describe('The chatbot response adapted to the user\'s message.'),
 });
 export type AdaptiveResponseOutput = z.infer<typeof AdaptiveResponseOutputSchema>;
 
@@ -32,39 +29,17 @@ const prompt = ai.definePrompt({
   name: 'adaptiveResponsePrompt',
   input: {schema: AdaptiveResponseInputSchema},
   output: {schema: AdaptiveResponseOutputSchema},
-  prompt: `You are a mental wellness chatbot designed to provide supportive and calming feedback.
+  prompt: `A user has sent the following message.
+Your task is to analyze their message, understand the underlying emotions and problems, and provide a thoughtful, supportive, and helpful response.
+Go beyond simple sentiment analysis. Try to identify the core issues the user is facing (e.g., stress, anxiety, sadness, loneliness).
+Based on your analysis, offer relevant insights, suggest potential coping mechanisms, or ask gentle, open-ended questions to encourage further reflection.
+Your response should be empathetic and aim to help the user feel understood and less alone.
 
-Analyze the sentiment of the following message and adapt your response accordingly.
-If the sentiment is negative, provide more supportive and calming feedback.
-If the sentiment is positive or neutral, provide an encouraging and helpful response.
-
-Message: {{{message}}}
-
-Sentiment: {{sentiment}}
-Adapted Response:`, // Fixed typo here
-  system: `You are a helpful and empathetic chatbot. Analyze the sentiment of the user's message and tailor your response to match their emotional state.`, // Added system prompt for context
+User Message: {{{message}}}
+`,
+  system: `You are "MindfulMe", a compassionate and knowledgeable AI companion for mental wellness. Your goal is to provide thoughtful, insightful, and supportive responses to help users navigate their feelings and challenges. You are not a licensed therapist, but you can offer guidance, coping strategies, and a safe space for users to express themselves. Always respond with empathy and aim to empower the user. Your response should be tailored to the user's message, providing specific, actionable advice where appropriate.`,
 });
 
-const analyzeSentiment = ai.defineTool({
-  name: 'analyzeSentiment',
-  description: 'Analyzes the sentiment of a given text message.',
-  inputSchema: z.object({
-    text: z.string().describe('The text message to analyze.'),
-  }),
-  outputSchema: z.enum(['positive', 'negative', 'neutral']),
-},
-async (input) => {
-  // Mock implementation for sentiment analysis (replace with actual sentiment analysis service).
-  //In a real application, this would call a sentiment analysis API.
-  console.log("Analyzing sentiment for: " + input.text);
-  if (input.text.toLowerCase().includes('sad') || input.text.toLowerCase().includes('anxious') || input.text.toLowerCase().includes('stressed')) {
-    return 'negative';
-  } else if (input.text.toLowerCase().includes('happy') || input.text.toLowerCase().includes('good') || input.text.toLowerCase().includes('well')) {
-    return 'positive';
-  } else {
-    return 'neutral';
-  }
-});
 
 const adaptiveResponseFlow = ai.defineFlow(
   {
@@ -73,8 +48,7 @@ const adaptiveResponseFlow = ai.defineFlow(
     outputSchema: AdaptiveResponseOutputSchema,
   },
   async input => {
-    const sentiment = await analyzeSentiment({text: input.message});
-    const {output} = await prompt({ ...input, sentiment });
+    const {output} = await prompt(input);
     return output!;
   }
 );
