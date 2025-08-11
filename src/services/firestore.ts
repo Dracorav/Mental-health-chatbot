@@ -3,12 +3,11 @@
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-type Message = {
+export type Message = {
     role: 'user' | 'assistant';
     text: string;
 };
 
-// This is a placeholder for now. We will implement chat history in a future step.
 export async function addMessage(userId: string, message: Message) {
     if (!userId) {
         console.error("No user ID provided to addMessage.");
@@ -26,8 +25,7 @@ export async function addMessage(userId: string, message: Message) {
     }
 }
 
-// This is a placeholder for now. We will implement chat history in a future step.
-export async function getMessages(userId: string) {
+export async function getMessages(userId: string): Promise<Message[]> {
     if (!userId) {
         console.error("No user ID provided to getMessages.");
         return [];

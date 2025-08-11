@@ -5,6 +5,9 @@ import { Send, Mic, Square, Bot, Play, Loader2 } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
 import { speechToText } from '@/ai/flows/speech-to-text';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { addMessage, getMessages } from '@/services/firestore';
+import { useUser } from '@/hooks/use-user';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +21,7 @@ import { T } from './T';
 import { useLanguage } from '@/hooks/use-language';
 
 type Message = {
-  id: number;
+  id: string;
   role: 'user' | 'assistant';
   text: string;
   audioUri?: string;
@@ -26,7 +29,7 @@ type Message = {
 };
 
 const WelcomeMessage: Message = {
-  id: 0,
+  id: '0',
   role: 'assistant',
   text: "Hello! I'm MindfulMe, your personal wellness companion. How are you feeling today?",
   isGeneratingAudio: false,
@@ -37,8 +40,12 @@ const AVATAR_URL = "https://i.postimg.cc/43WKm1Py/avatar.jpg";
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+
   const { language } = useLanguage();
+  const { user, loading: isUserLoading } = useUser();
+  const router = useRouter();
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
@@ -46,12 +53,34 @@ export function ChatInterface() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    async function loadHistory() {
+      if (user) {
+        setIsHistoryLoading(true);
+        const history = await getMessages(user.uid);
+        if (history.length > 0) {
+          setMessages(history.map((m, i) => ({ id: `hist-${i}`, ...m })));
+        } else {
+          setMessages([WelcomeMessage]);
+        }
+        setIsHistoryLoading(false);
+      }
+    }
+    loadHistory();
+  }, [user]);
+
+  useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
   
-  const generateAndSetAudio = async (messageId: number, text: string) => {
+  const generateAndSetAudio = async (messageId: string, text: string) => {
     try {
       const ttsResponse = await textToSpeech(text);
       if (ttsResponse && ttsResponse.media) {
@@ -64,23 +93,25 @@ export function ChatInterface() {
         description: 'Could not generate audio. You may have exceeded the daily usage limit.',
         variant: 'destructive',
       });
-      // Set isGeneratingAudio to false to stop the loader
       setMessages(prev => prev.map(m => m.id === messageId ? {...m, isGeneratingAudio: false} : m));
     }
   };
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isProcessing || !user) return;
 
-    const userMessage: Message = { id: Date.now(), role: 'user', text: input };
+    const userMessageText = input;
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', text: userMessageText };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsLoading(true);
+    setIsProcessing(true);
 
     try {
-      const response = await adaptiveResponse({ message: input, language });
-      const assistantMessageId = Date.now() + 1;
+      await addMessage(user.uid, { role: 'user', text: userMessageText });
+      const response = await adaptiveResponse({ message: userMessageText, language });
+      
+      const assistantMessageId = (Date.now() + 1).toString();
       const assistantMessage: Message = {
         id: assistantMessageId,
         role: 'assistant',
@@ -89,11 +120,8 @@ export function ChatInterface() {
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      if (response.adaptedResponse) {
-        await generateAndSetAudio(assistantMessageId, response.adaptedResponse);
-      } else {
-        setMessages(prev => prev.map(m => m.id === assistantMessageId ? {...m, isGeneratingAudio: false} : m));
-      }
+      await addMessage(user.uid, { role: 'assistant', text: response.adaptedResponse });
+      await generateAndSetAudio(assistantMessageId, response.adaptedResponse);
 
     } catch (error) {
       console.error(error);
@@ -103,14 +131,14 @@ export function ChatInterface() {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
   };
 
   const handleVoiceInput = async () => {
     if (recorderState === 'recording') {
       try {
-        setIsLoading(true);
+        setIsProcessing(true);
         const audioDataUri = await stopRecording();
         const { text } = await speechToText({ audioDataUri });
         setInput(text);
@@ -122,7 +150,7 @@ export function ChatInterface() {
           variant: 'destructive',
         });
       } finally {
-        setIsLoading(false);
+        setIsProcessing(false);
         resetRecorder();
       }
     } else {
@@ -137,6 +165,15 @@ export function ChatInterface() {
     const audio = new Audio(audioUri);
     audioRef.current = audio;
     audio.play().catch(e => console.error("Error playing audio:", e));
+  }
+  
+  if (isUserLoading || !user) {
+    return (
+        <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground"><T>Loading your session...</T></p>
+        </div>
+    )
   }
 
   return (
@@ -154,7 +191,12 @@ export function ChatInterface() {
           </div>
 
           <div className="space-y-6">
-            {messages.map((message) => (
+            {isHistoryLoading ? (
+                 <div className='flex items-end gap-3 justify-start'>
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-12 w-48 rounded-2xl" />
+               </div>
+            ) : messages.map((message) => (
               <div
                 key={message.id}
                 className={cn(
@@ -197,7 +239,7 @@ export function ChatInterface() {
                 )}
               </div>
             ))}
-            {isLoading && !messages.some(m => m.id > Date.now()) && (
+            {isProcessing && !messages.some(m => m.id > Date.now().toString()) && (
                <div className='flex items-end gap-3 justify-start'>
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={AVATAR_URL} />
@@ -221,7 +263,7 @@ export function ChatInterface() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message or use the mic..."
               className="flex-1 border-0 bg-transparent text-base focus-visible:ring-0 focus-visible:ring-offset-0"
-              disabled={isLoading || recorderState === 'recording'}
+              disabled={isProcessing || recorderState === 'recording'}
             />
             <Button
               type="button"
@@ -229,7 +271,7 @@ export function ChatInterface() {
               variant="ghost"
               className="rounded-full text-primary hover:bg-primary/10"
               onClick={handleVoiceInput}
-              disabled={isLoading}
+              disabled={isProcessing}
               aria-label={recorderState === 'recording' ? 'Stop recording' : 'Start recording'}
             >
               {recorderState === 'recording' ? (
@@ -242,7 +284,7 @@ export function ChatInterface() {
               type="submit"
               size="icon"
               className="rounded-full bg-primary hover:bg-primary/90"
-              disabled={isLoading || !input.trim()}
+              disabled={isProcessing || !input.trim()}
               aria-label="Send message"
             >
               <Send className="h-5 w-5" />
