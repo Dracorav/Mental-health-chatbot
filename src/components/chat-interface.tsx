@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import { Send, Mic, Square } from 'lucide-react';
+import { Send, Mic, Square, Bot } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
 import { speechToText } from '@/ai/flows/speech-to-text';
-import { generateTalkingAvatar } from '@/ai/flows/generate-talking-avatar';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
-import { TalkingAvatar } from '@/components/talking-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,6 +13,8 @@ import { useRecorder } from '@/hooks/use-recorder';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { T } from './T';
 
 type Message = {
   id: number;
@@ -33,17 +34,24 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play();
+    }
+  }, [audioUrl]);
   
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -53,26 +61,15 @@ export function ChatInterface() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setAudioUrl(null);
 
     try {
       const { adaptedResponse } = await adaptiveResponse({ message: input });
       const assistantMessage: Message = { id: Date.now() + 1, role: 'assistant', text: adaptedResponse };
       setMessages(prev => [...prev, assistantMessage]);
 
-      const { videoDataUri } = await generateTalkingAvatar({ 
-        textToSpeak: adaptedResponse,
-        avatarImageUrl: AVATAR_URL,
-      });
-
-      if (videoDataUri) {
-        setVideoUrl(videoDataUri);
-      } else {
-         toast({
-          title: 'An error occurred',
-          description: 'Failed to generate avatar video. Please try again.',
-          variant: 'destructive',
-        });
-      }
+      const ttsResponse = await textToSpeech(adaptedResponse);
+      setAudioUrl(ttsResponse.media);
 
     } catch (error) {
       console.error(error);
@@ -114,8 +111,13 @@ export function ChatInterface() {
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-2xl px-4 py-8">
           <div className="mb-8 flex flex-col items-center justify-center gap-4">
-            <TalkingAvatar videoUrl={videoUrl} imageUrl={AVATAR_URL} isLoading={isLoading} />
-            <h2 className="text-2xl font-semibold font-headline text-center">MindfulMe</h2>
+             <Avatar className="h-32 w-32">
+              <AvatarImage src={AVATAR_URL} alt="MindfulMe Avatar" />
+              <AvatarFallback>
+                <Bot />
+              </AvatarFallback>
+            </Avatar>
+            <h2 className="text-2xl font-semibold font-headline text-center"><T>MindfulMe</T></h2>
           </div>
 
           <div className="space-y-6">
@@ -127,6 +129,12 @@ export function ChatInterface() {
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 )}
               >
+                 {message.role === 'assistant' && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={AVATAR_URL} />
+                    <AvatarFallback><Bot /></AvatarFallback>
+                  </Avatar>
+                )}
                 <div
                   className={cn(
                     'max-w-md rounded-2xl px-4 py-3 text-base',
@@ -141,6 +149,10 @@ export function ChatInterface() {
             ))}
             {isLoading && !messages.some(m => m.id > Date.now()) && (
                <div className='flex items-end gap-3 justify-start'>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={AVATAR_URL} />
+                    <AvatarFallback><Bot /></AvatarFallback>
+                  </Avatar>
                   <Skeleton className="h-12 w-48 rounded-2xl" />
                </div>
             )}
@@ -150,6 +162,11 @@ export function ChatInterface() {
 
       <div className="sticky bottom-0 bg-background/80 py-4 backdrop-blur-sm">
         <div className="container mx-auto max-w-2xl px-4">
+          {audioUrl && (
+            <div className="mb-2">
+                <audio ref={audioRef} src={audioUrl} controls className="w-full h-10" />
+            </div>
+          )}
           <form
             onSubmit={handleSendMessage}
             className="flex items-center gap-2 rounded-full border bg-card p-2 shadow-sm"
