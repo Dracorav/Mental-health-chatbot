@@ -58,12 +58,13 @@ export function ChatInterface() {
         setMessages(prev => prev.map(m => m.id === messageId ? {...m, audioUri: ttsResponse.media, isGeneratingAudio: false} : m));
       }
     } catch (e) {
-      console.error("Error with TTS service. It may be rate-limited.", e);
+      console.error("Error generating audio:", e);
       toast({
-        title: 'Audio Error',
-        description: 'Could not generate audio. The service might be unavailable.',
+        title: 'Audio Generation Failed',
+        description: 'Could not generate audio. You may have exceeded the daily usage limit.',
         variant: 'destructive',
       });
+      // Set isGeneratingAudio to false to stop the loader
       setMessages(prev => prev.map(m => m.id === messageId ? {...m, isGeneratingAudio: false} : m));
     }
   };
@@ -89,8 +90,11 @@ export function ChatInterface() {
       setMessages(prev => [...prev, assistantMessage]);
 
       if (response.adaptedResponse) {
-        generateAndSetAudio(assistantMessageId, response.adaptedResponse);
+        await generateAndSetAudio(assistantMessageId, response.adaptedResponse);
+      } else {
+        setMessages(prev => prev.map(m => m.id === assistantMessageId ? {...m, isGeneratingAudio: false} : m));
       }
+
     } catch (error) {
       console.error(error);
       toast({
