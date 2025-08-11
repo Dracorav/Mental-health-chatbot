@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, MessageSquare, Smile, Heart, Languages, LogIn, LogOut, UserPlus, UserCircle, Loader2 } from 'lucide-react';
+import { Bot, MessageSquare, Smile, Heart, Languages, LogIn, LogOut, UserCircle, Loader2 } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '@/hooks/use-language';
 import { UserProvider, useUser } from '@/hooks/use-user';
 import { auth } from '@/lib/firebase';
@@ -83,7 +83,7 @@ function AuthSection() {
                 title: 'Logged Out',
                 description: "You have been successfully logged out."
             })
-            router.push('/');
+            router.push('/login');
         } catch (error) {
             console.error("Logout error", error);
             toast({
@@ -130,14 +130,6 @@ function AuthSection() {
                             <Link href="/login">
                                 <LogIn className="h-5 w-5" />
                                 <span className="group-data-[collapsible=icon]:hidden"><T>Login</T></span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild className="justify-start">
-                            <Link href="/signup">
-                                <UserPlus className="h-5 w-5" />
-                                <span className="group-data-[collapsible=icon]:hidden"><T>Sign Up</T></span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
