@@ -10,15 +10,10 @@ interface TProps {
 
 function TComponent({ children }: TProps) {
   const { language } = useLanguage();
-  const [translatedText, setTranslatedText] = useState(children);
-  const [isMounted, setIsMounted] = useState(false);
+  const [translatedText, setTranslatedText] = useState('');
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isMounted || language === 'en' || !children) {
+    if (language === 'en' || !children) {
       setTranslatedText(children);
       return;
     }
@@ -41,14 +36,14 @@ function TComponent({ children }: TProps) {
     return () => {
       isCancelled = true;
     };
-  }, [children, language, isMounted]);
+  }, [children, language]);
 
-  if (!isMounted) {
-    // On the server and initial client render, return the original text.
+  // On the server and on the initial client render, render the original children.
+  // After hydration, the useEffect hook will run and update the state with the translation.
+  if (translatedText === '') {
     return <>{children}</>;
   }
-  
-  // On subsequent client renders, return the translated text.
+
   return <>{translatedText}</>;
 }
 
