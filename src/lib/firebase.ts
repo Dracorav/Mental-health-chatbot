@@ -7,7 +7,7 @@ import { getFirestore } from "firebase/firestore";
 const firebaseConfig = {
   projectId: "careme-xio3c",
   appId: "1:641786164037:web:7750c394b5b11fb629442c",
-  storageBucket: "careme-xio3c.firebasestorage.app",
+  storageBucket: "careme-xio3c.appspot.com",
   apiKey: "AIzaSyD6IDebyPBb4l0oE8MAf_4fd14B2jwitb8",
   authDomain: "careme-xio3c.firebaseapp.com",
   messagingSenderId: "641786164037"
