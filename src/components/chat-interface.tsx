@@ -5,9 +5,6 @@ import { Send, Mic, Square, Bot, Play, Loader2 } from 'lucide-react';
 import { adaptiveResponse } from '@/ai/flows/adaptive-response';
 import { speechToText } from '@/ai/flows/speech-to-text';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
-import { addMessage, getMessages } from '@/services/firestore';
-import { useUser } from '@/hooks/use-user';
-import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,38 +38,13 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([WelcomeMessage]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
   const { language } = useLanguage();
-  const { user, loading: isUserLoading } = useUser();
-  const router = useRouter();
 
   const { recorderState, startRecording, stopRecording, resetRecorder } = useRecorder();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
-  useEffect(() => {
-    async function loadHistory() {
-      if (user) {
-        setIsHistoryLoading(true);
-        const history = await getMessages(user.uid);
-        if (history.length > 0) {
-          setMessages(history.map((m, i) => ({ id: `hist-${i}`, ...m })));
-        } else {
-          setMessages([WelcomeMessage]);
-        }
-        setIsHistoryLoading(false);
-      }
-    }
-    loadHistory();
-  }, [user]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -85,6 +57,8 @@ export function ChatInterface() {
       const ttsResponse = await textToSpeech(text);
       if (ttsResponse && ttsResponse.media) {
         setMessages(prev => prev.map(m => m.id === messageId ? {...m, audioUri: ttsResponse.media, isGeneratingAudio: false} : m));
+      } else {
+         throw new Error('TTS response is missing media.');
       }
     } catch (e) {
       console.error("Error generating audio:", e);
@@ -99,7 +73,7 @@ export function ChatInterface() {
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isProcessing || !user) return;
+    if (!input.trim() || isProcessing) return;
 
     const userMessageText = input;
     const userMessage: Message = { id: Date.now().toString(), role: 'user', text: userMessageText };
@@ -108,7 +82,6 @@ export function ChatInterface() {
     setIsProcessing(true);
 
     try {
-      await addMessage(user.uid, { role: 'user', text: userMessageText });
       const response = await adaptiveResponse({ message: userMessageText, language });
       
       const assistantMessageId = (Date.now() + 1).toString();
@@ -120,7 +93,6 @@ export function ChatInterface() {
       };
       setMessages(prev => [...prev, assistantMessage]);
 
-      await addMessage(user.uid, { role: 'assistant', text: response.adaptedResponse });
       await generateAndSetAudio(assistantMessageId, response.adaptedResponse);
 
     } catch (error) {
@@ -166,15 +138,6 @@ export function ChatInterface() {
     audioRef.current = audio;
     audio.play().catch(e => console.error("Error playing audio:", e));
   }
-  
-  if (isUserLoading || !user) {
-    return (
-        <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col items-center justify-center bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground"><T>Loading your session...</T></p>
-        </div>
-    )
-  }
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] md:h-screen flex-col bg-background">
@@ -191,12 +154,7 @@ export function ChatInterface() {
           </div>
 
           <div className="space-y-6">
-            {isHistoryLoading ? (
-                 <div className='flex items-end gap-3 justify-start'>
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <Skeleton className="h-12 w-48 rounded-2xl" />
-               </div>
-            ) : messages.map((message) => (
+            {messages.map((message) => (
               <div
                 key={message.id}
                 className={cn(
